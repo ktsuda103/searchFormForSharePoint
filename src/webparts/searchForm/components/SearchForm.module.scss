@@ -1,0 +1,63 @@
+@import '~office-ui-fabric-react/dist/sass/References.scss';
+
+.searchForm {
+  overflow: hidden;
+  color: "[theme:bodyText, default: #323130]";
+  color: var(--bodyText);
+  &.teams {
+    font-family: $ms-font-family-fallbacks;
+  }
+}
+
+.links {
+  a {
+    text-decoration: none;
+    color: "[theme:link, default:#03787c]";
+    color: var(--link); // note: CSS Custom Properties support is limited to modern browsers only
+
+    &:hover {
+      text-decoration: underline;
+      color: "[theme:linkHovered, default: #014446]";
+      color: var(--linkHovered); // note: CSS Custom Properties support is limited to modern browsers only
+    }
+  }
+}
+
+.buttons{
+  padding-top: 20px;
+  > button{
+    margin-right: 10px;
+  }
+}
+
+.searchForm{
+  flex-basis: 30%;
+  label{
+    display: block;
+  }
+}
+
+.searchResult{
+  overflow: scroll !important;
+  flex-basis: 70%;
+  table{
+    width: 50px;
+  }
+  th td{
+    width: 50px;
+  }  
+}
+
+.page{
+    cursor: pointer;
+    margin-right: 10px;
+}
+
+.pagenation{
+  width: 100%;
+  text-align: center;
+}
+
+.categoryList{
+  list-style: none;
+}

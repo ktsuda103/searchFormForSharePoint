@@ -1,0 +1,16 @@
+{
+  "@microsoft/generator-sharepoint": {
+    "plusBeta": false,
+    "isCreatingSolution": true,
+    "version": "1.15.2",
+    "libraryName": "search-form",
+    "libraryId": "2b4d8de8-880c-4353-8b4a-f312cc42f87a",
+    "environment": "spo",
+    "packageManager": "npm",
+    "solutionName": "searchForm",
+    "solutionShortDescription": "searchForm description",
+    "skipFeatureDeployment": true,
+    "isDomainIsolated": false,
+    "componentType": "webpart"
+  }
+}

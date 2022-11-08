@@ -1,0 +1,1 @@
+export type SearchButtonClickedCallback = (word:string) => void;
