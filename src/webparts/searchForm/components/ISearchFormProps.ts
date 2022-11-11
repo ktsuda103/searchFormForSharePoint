@@ -2,15 +2,18 @@ import {
   ButtonClickedCallback,
   SearchButtonClickedCallback,
   IPageListItem,
-  ICategory
+  ICategory,
+  IClassification
 } from '../../../models'
 
 export interface ISearchFormProps {
   pageListItem: IPageListItem[];
-  categoryList:ICategory[],
+  categoryList: ICategory[];
+  classificationList: IClassification[];
   onGetListItems?: ButtonClickedCallback;
-  search?:SearchButtonClickedCallback;
-  onGetCategory?:ButtonClickedCallback;
+  search?: SearchButtonClickedCallback;
+  onGetCategory?: ButtonClickedCallback;
+  onGetClassification?: ButtonClickedCallback;
   isDarkTheme: boolean;
   environmentMessage: string;
   hasTeamsContext: boolean;

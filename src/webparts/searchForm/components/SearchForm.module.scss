@@ -1,9 +1,11 @@
 @import '~office-ui-fabric-react/dist/sass/References.scss';
 
 .searchForm {
+  width: 1320px;
   overflow: hidden;
   color: "[theme:bodyText, default: #323130]";
   color: var(--bodyText);
+
   &.teams {
     font-family: $ms-font-family-fallbacks;
   }
@@ -23,41 +25,79 @@
   }
 }
 
-.buttons{
+.buttons {
   padding-top: 20px;
-  > button{
+
+  >button {
     margin-right: 10px;
   }
 }
 
-.searchForm{
+.searchForm {
   flex-basis: 30%;
-  label{
+
+  label {
     display: block;
   }
 }
 
-.searchResult{
+.searchResult {
   overflow: scroll !important;
   flex-basis: 70%;
-  table{
+
+  table {
+    width: 1320px;
+
+    thead tr {
+      th:nth-child(1) {
+        width: 300px;
+      }
+
+      th:nth-child(2) {
+        width: 175px;
+      }
+
+      th:nth-child(3) {
+        width: 100px;
+      }
+
+      th:nth-child(4) {
+        width: 145px;
+      }
+
+      th:nth-child(5) {
+        width: 200px;
+      }
+
+      th:nth-child(6) {
+        width: 200px;
+      }
+
+      th:nth-child(7) {
+        width: 100px;
+      }
+
+      th:nth-child(8) {
+        width: 100px;
+      }
+    }
+  }
+
+  th td {
     width: 50px;
   }
-  th td{
-    width: 50px;
-  }  
 }
 
-.page{
-    cursor: pointer;
-    margin-right: 10px;
+.page {
+  cursor: pointer;
+  margin-right: 10px;
 }
 
-.pagenation{
+.pagenation {
   width: 100%;
   text-align: center;
 }
 
-.categoryList{
+.categoryList {
   list-style: none;
 }

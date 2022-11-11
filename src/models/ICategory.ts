@@ -1,5 +1,5 @@
-export interface ICategory{
-    Id:string,
-    Title:string,
-    ClassificationNum:string   
+export interface ICategory {
+    Id: string,
+    Title: string,
+    classificationId: string
 }

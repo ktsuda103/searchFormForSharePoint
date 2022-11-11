@@ -13,7 +13,7 @@ import SearchForm from './components/SearchForm';
 import { ISearchFormProps } from './components/ISearchFormProps';
 
 import { SPHttpClient } from '@microsoft/sp-http';
-import { ICategory, IPageListItem } from '../../models';
+import { ICategory, IPageListItem, IClassification } from '../../models';
 
 export interface ISearchFormWebPartProps {
   description: string;
@@ -25,16 +25,19 @@ export default class SearchFormWebPart extends BaseClientSideWebPart<ISearchForm
   private _environmentMessage: string = '';
   private _pages: IPageListItem[] = [];
   private _categoryList: ICategory[] = [];
+  private _classificationList: IClassification[] = [];
 
   public render(): void {
     const element: React.ReactElement<ISearchFormProps> = React.createElement(
       SearchForm,
       {
         pageListItem: this._pages,
-        categoryList:this._categoryList,
+        categoryList: this._categoryList,
+        classificationList: this._classificationList,
         onGetListItems: this._onGetListItems,
-        search:this._search,
-        onGetCategory:this._onGetCategory,
+        search: this._search,
+        onGetCategory: this._onGetCategory,
+        onGetClassification: this._onGetClassification,
         isDarkTheme: this._isDarkTheme,
         environmentMessage: this._environmentMessage,
         hasTeamsContext: !!this.context.sdks.microsoftTeams,
@@ -45,19 +48,19 @@ export default class SearchFormWebPart extends BaseClientSideWebPart<ISearchForm
     ReactDom.render(element, this.domElement);
   }
 
-  private _onGetCategory= async ():Promise<void> => {
+  private _onGetCategory = async (): Promise<void> => {
     const response: ICategory[] = await this._getCategory();
     this._categoryList = response;
-    this.render();
+    //this.render();
   }
 
-  private async _getCategory(): Promise<ICategory[]>{
+  private async _getCategory(): Promise<ICategory[]> {
     const response = await this.context.spHttpClient.get(
-      this.context.pageContext.web.absoluteUrl + `/_api/web/lists/getbytitle('category')/items`,
+      this.context.pageContext.web.absoluteUrl + `/_api/web/lists/getbytitle('category')/items?$select=Id,Title,classificationId`,
       SPHttpClient.configurations.v1
     );
 
-    if(!response.ok){
+    if (!response.ok) {
       const responseText = await response.text();
       throw new Error(responseText);
     }
@@ -67,27 +70,55 @@ export default class SearchFormWebPart extends BaseClientSideWebPart<ISearchForm
     return responseJson.value as ICategory[];
   }
 
-  private _onGetListItems = async ():Promise<void> => {
+  private _onGetClassification = async (): Promise<void> => {
+    const response: IClassification[] = await this._getClassification();
+    this._classificationList = response;
+    //this.render();
+  }
+
+  private _getClassification = async (): Promise<IClassification[]> => {
+    const response = await this.context.spHttpClient.get(
+      this.context.pageContext.web.absoluteUrl + `/_api/web/lists/getbytitle('classification')/items?$select=Id,Title`,
+      SPHttpClient.configurations.v1
+    );
+
+    if (!response.ok) {
+      const responseText = await response.text();
+      throw new Error(responseText);
+    }
+
+    const responseJson = await response.json();
+
+    return responseJson.value as ICategory[];
+  }
+
+  private _onGetListItems = async (): Promise<void> => {
     const response: IPageListItem[] = await this._getListItems();
-    const tmp:IPageListItem[] = [];
-    response.forEach(async function(list){
+    const tmp: IPageListItem[] = [];
+    response.forEach(async function (list) {
       list.Title != null
-      && list.Title != "ホーム"
-      && list.Title != "template1"
-      && list.Title != "template2"
-      && list.Title != "template3"
-      &&　tmp.push(list);
+        && list.Title != "ホーム"
+        && list.Title != "テンプレートA"
+        && list.Title != "template2"
+        && list.Title != "template3"
+        && tmp.push(list);
     })
+    tmp.sort((a, b) => this.compareCreated(a, b))
     this._pages = tmp;
     this.render();
   }
+  private compareCreated(a: IPageListItem, b: IPageListItem) {
+    if (a.Created == b.Created) { return 0 }
+    if (a.Created > b.Created) { return -1 }
+    if (a.Created < b.Created) { return 1 }
+  }
 
-  private async _getListItems(): Promise<IPageListItem[]>{
+  private async _getListItems(): Promise<IPageListItem[]> {
     const response = await this.context.spHttpClient.get(
       this.context.pageContext.web.absoluteUrl + `/_api/web/lists/getbytitle('サイトのページ')/items`,
       SPHttpClient.configurations.v1);
 
-    if(!response.ok){
+    if (!response.ok) {
       const responseText = await response.text();
       throw new Error(responseText);
     }
@@ -96,32 +127,23 @@ export default class SearchFormWebPart extends BaseClientSideWebPart<ISearchForm
 
     return responseJson.value as IPageListItem[];
   }
-  
-  private _search = async (word:string):Promise<void> => {
-    const response: IPageListItem[] = await this._getSearchTitle();
-    const tmp:IPageListItem[] = [];
-    response.forEach(async function(list){
+
+  private _search = async (word: string): Promise<void> => {
+    const response: IPageListItem[] = await this._getListItems();
+    const tmp: IPageListItem[] = [];
+    response.forEach(async function (list, index) {
+
       list.Title != null
-      && list.Title.indexOf(word)>=0
-      &&　tmp.push(list);
+        && list.Title != "ホーム"
+        && list.Title.indexOf(word) >= 0
+        && tmp.push(list); tmp[index].LikeCount = this._getLikeCount(list.Id);
     })
     this._pages = tmp;
     this.render();
   }
 
-  private async _getSearchTitle(): Promise<IPageListItem[]>{
-    const response = await this.context.spHttpClient.get(
-      this.context.pageContext.web.absoluteUrl + `/_api/web/lists/getbytitle('サイトのページ')/items?$select=Id,Title`,
-      SPHttpClient.configurations.v1);
-    
-    if(!response.ok){
-      const responseText = await response.text();
-      throw new Error(responseText);
-    }
-
-    const responseJson = await response.json();
-
-    return responseJson.value as IPageListItem[];
+  private _getLikeCount = (id: number) => {
+    console.log("hello!!")
   }
 
   protected onInit(): Promise<void> {
