@@ -1,7 +1,7 @@
 @import '~office-ui-fabric-react/dist/sass/References.scss';
 
 .searchForm {
-  width: 1320px;
+  //width: 1320px;
   overflow: hidden;
   color: "[theme:bodyText, default: #323130]";
   color: var(--bodyText);
@@ -50,11 +50,11 @@
 
     thead tr {
       th:nth-child(1) {
-        width: 300px;
+        width: 370px;
       }
 
       th:nth-child(2) {
-        width: 175px;
+        width: 370px;
       }
 
       th:nth-child(3) {
@@ -98,6 +98,7 @@
   text-align: center;
 }
 
-.categoryList {
+.categoryList,
+.buList {
   list-style: none;
 }

@@ -13,7 +13,7 @@ import SearchForm from './components/SearchForm';
 import { ISearchFormProps } from './components/ISearchFormProps';
 
 import { SPHttpClient } from '@microsoft/sp-http';
-import { ICategory, IPageListItem, IClassification } from '../../models';
+import { ICategory, IPageListItem, IClassification, IBU, ISearchFormState } from '../../models';
 
 export interface ISearchFormWebPartProps {
   description: string;
@@ -26,6 +26,7 @@ export default class SearchFormWebPart extends BaseClientSideWebPart<ISearchForm
   private _pages: IPageListItem[] = [];
   private _categoryList: ICategory[] = [];
   private _classificationList: IClassification[] = [];
+  private _buList: IBU[] = [];
 
   public render(): void {
     const element: React.ReactElement<ISearchFormProps> = React.createElement(
@@ -34,10 +35,12 @@ export default class SearchFormWebPart extends BaseClientSideWebPart<ISearchForm
         pageListItem: this._pages,
         categoryList: this._categoryList,
         classificationList: this._classificationList,
+        buList: this._buList,
         onGetListItems: this._onGetListItems,
         search: this._search,
         onGetCategory: this._onGetCategory,
         onGetClassification: this._onGetClassification,
+        onGetBU: this._onGetBU,
         isDarkTheme: this._isDarkTheme,
         environmentMessage: this._environmentMessage,
         hasTeamsContext: !!this.context.sdks.microsoftTeams,
@@ -51,12 +54,12 @@ export default class SearchFormWebPart extends BaseClientSideWebPart<ISearchForm
   private _onGetCategory = async (): Promise<void> => {
     const response: ICategory[] = await this._getCategory();
     this._categoryList = response;
-    //this.render();
+    await this._categoryList.sort((a, b) => this._sortAscending(a.priority, b.priority))
   }
 
   private async _getCategory(): Promise<ICategory[]> {
     const response = await this.context.spHttpClient.get(
-      this.context.pageContext.web.absoluteUrl + `/_api/web/lists/getbytitle('category')/items?$select=Id,Title,classificationId`,
+      this.context.pageContext.web.absoluteUrl + `/_api/web/lists/getbytitle('category')/items?$select=Id,Title,classificationId,priority`,
       SPHttpClient.configurations.v1
     );
 
@@ -73,12 +76,12 @@ export default class SearchFormWebPart extends BaseClientSideWebPart<ISearchForm
   private _onGetClassification = async (): Promise<void> => {
     const response: IClassification[] = await this._getClassification();
     this._classificationList = response;
-    //this.render();
+    await this._classificationList.sort((a, b) => this._sortAscending(a.priority, b.priority))
   }
 
   private _getClassification = async (): Promise<IClassification[]> => {
     const response = await this.context.spHttpClient.get(
-      this.context.pageContext.web.absoluteUrl + `/_api/web/lists/getbytitle('classification')/items?$select=Id,Title`,
+      this.context.pageContext.web.absoluteUrl + `/_api/web/lists/getbytitle('classification')/items?$select=Id,Title,priority`,
       SPHttpClient.configurations.v1
     );
 
@@ -92,25 +95,66 @@ export default class SearchFormWebPart extends BaseClientSideWebPart<ISearchForm
     return responseJson.value as ICategory[];
   }
 
+  private _onGetBU = async (): Promise<void> => {
+    const response: IBU[] = await this._getBU();
+    this._buList = response;
+  }
+
+  private async _getBU(): Promise<IBU[]> {
+    const response = await this.context.spHttpClient.get(
+      this.context.pageContext.web.absoluteUrl + `/_api/web/lists/getbytitle('bu')/items?$select=Id,Title`,
+      SPHttpClient.configurations.v1
+    );
+
+    if (!response.ok) {
+      const responseText = await response.text();
+      throw new Error(responseText);
+    }
+
+    const responseJson = await response.json();
+
+    return responseJson.value as IBU[];
+  }
+
   private _onGetListItems = async (): Promise<void> => {
     const response: IPageListItem[] = await this._getListItems();
+    //一時保存
     const tmp: IPageListItem[] = [];
-    response.forEach(async function (list) {
+    //インスタンスを一時退避
+    const instance = this;
+    response.forEach(function (list) {
       list.Title != null
         && list.Title != "ホーム"
-        && list.Title != "テンプレートA"
-        && list.Title != "template2"
-        && list.Title != "template3"
-        && tmp.push(list);
+        && instance._setLikeCount(list)
+        && instance._setCommentCount(list)
+        && tmp.push(list)
     })
-    tmp.sort((a, b) => this.compareCreated(a, b))
+    tmp.sort((a, b) => this._sortDescending(a.Created, b.Created))
     this._pages = tmp;
     this.render();
   }
-  private compareCreated(a: IPageListItem, b: IPageListItem) {
-    if (a.Created == b.Created) { return 0 }
-    if (a.Created > b.Created) { return -1 }
-    if (a.Created < b.Created) { return 1 }
+
+  private _search = async (state: ISearchFormState): Promise<void> => {
+    const response: IPageListItem[] = await this._getListItems();
+    //一時保存
+    const tmp: IPageListItem[] = [];
+    //インスタンスを一時退避
+    const instance = this;
+    //半角全角スペースで区切る
+    const wordArr = state.word.split(/[ |　]/)
+
+    //フィルター
+    response.forEach(function (list) {
+      list.Title != null
+        && list.Title != "ホーム"
+        //フリーワード 内容とタイトル
+        && (wordArr.filter(val => list.Title.indexOf(val) >= 0).length > 0 || (list.Description && wordArr.filter(val => list.Description.indexOf(val) >= 0).length > 0))
+        && instance._setLikeCount(list)
+        && instance._setCommentCount(list)
+        && tmp.push(list)
+    })
+    this._pages = tmp;
+    this.render();
   }
 
   private async _getListItems(): Promise<IPageListItem[]> {
@@ -125,25 +169,70 @@ export default class SearchFormWebPart extends BaseClientSideWebPart<ISearchForm
 
     const responseJson = await response.json();
 
-    return responseJson.value as IPageListItem[];
+    return responseJson.value as IPageListItem[];;
   }
 
-  private _search = async (word: string): Promise<void> => {
-    const response: IPageListItem[] = await this._getListItems();
-    const tmp: IPageListItem[] = [];
-    response.forEach(async function (list, index) {
-
-      list.Title != null
-        && list.Title != "ホーム"
-        && list.Title.indexOf(word) >= 0
-        && tmp.push(list); tmp[index].LikeCount = this._getLikeCount(list.Id);
-    })
-    this._pages = tmp;
-    this.render();
+  private async _setLikeCount(list: IPageListItem): Promise<void> {
+    list.LikeCount = await this._getLikeCount(list.Id)
   }
 
-  private _getLikeCount = (id: number) => {
-    console.log("hello!!")
+  private async _getLikeCount(id: string): Promise<number> {
+    const response = await this.context.spHttpClient.get(
+      this.context.pageContext.web.absoluteUrl + `/_api/web/lists/GetByTitle('サイトのページ')/items(${id})/likedBy?$inlineCount=AllPages`,
+      SPHttpClient.configurations.v1);
+
+    if (!response.ok) {
+      const responseText = await response.text();
+      throw new Error(responseText);
+    }
+
+    const responseJson = await response.json();
+    return responseJson["@odata.count"]
+  }
+
+  private async _setCommentCount(list: IPageListItem): Promise<void> {
+    list.CommentCount = await this._getCommentCount(list.Id)
+    this.render()
+  }
+
+  private async _getCommentCount(id: string): Promise<number> {
+    const response = await this.context.spHttpClient.get(
+      this.context.pageContext.web.absoluteUrl + `/_api/web/lists/GetByTitle('サイトのページ')/items(${id})/Comments?$expand=replies,likedBy,replies/likedBy&$inlineCount=AllPages`,
+      SPHttpClient.configurations.v1);
+
+    if (!response.ok) {
+      const responseText = await response.text();
+      throw new Error(responseText);
+    }
+
+    const responseJson = await response.json();
+    return responseJson["@odata.count"];
+  }
+
+  /**
+   * 降順に並び替え
+   * 
+   * @param target1 
+   * @param target2 
+   * @returns 
+   */
+  private _sortDescending(target1: any, target2: any) {
+    if (target1 == target2) { return 0 }
+    if (target1 > target2) { return -1 }
+    if (target1 < target2) { return 1 }
+  }
+
+  /**
+   * 昇順に並び替え
+   * 
+   * @param target1 
+   * @param target2 
+   * @returns 
+   */
+  private _sortAscending(target1: any, target2: any) {
+    if (target1 == target2) { return 0 }
+    if (target1 > target2) { return 1 }
+    if (target1 < target2) { return -1 }
   }
 
   protected onInit(): Promise<void> {

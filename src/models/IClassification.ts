@@ -1,4 +1,5 @@
 export interface IClassification {
     Id: string,
-    Title: string
+    Title: string,
+    priority: number
 }

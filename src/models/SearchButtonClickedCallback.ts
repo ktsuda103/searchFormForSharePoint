@@ -1,1 +1,3 @@
-export type SearchButtonClickedCallback = (word:string) => void;
+import { ISearchFormState } from "../models/ISearchFormState"
+
+export type SearchButtonClickedCallback = (state: ISearchFormState) => void;
