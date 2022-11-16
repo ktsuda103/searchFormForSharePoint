@@ -23,10 +23,9 @@ export default class SearchForm extends React.Component<ISearchFormProps, ISearc
     }
   }
 
-  search = (event: React.MouseEvent<HTMLButtonElement>): void => {
+  search = (event: React.MouseEvent<any>, status?: string): void => {
     event.preventDefault();
-    // this.props.search(this.state);
-    this.props.search(this.state);
+    this.props.search(this.state, status);
   }
 
   changeCategoryCheckBox = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -92,7 +91,7 @@ export default class SearchForm extends React.Component<ISearchFormProps, ISearc
             <input type="text" id="searchBox" className="form-control" onChange={(event) => this.setState({ word: event.target.value })} />
           </div>
           <div className={`${styles.buttons} offset-8`}>
-            <button type="button" className="btn btn-primary" onClick={this.search}>検索</button>
+            <button type="button" className="btn btn-primary" onClick={e => this.search(e, "clickSearchButton")}>検索</button>
           </div>
         </div>
         <div className={`${styles.searchResult} col-12`}>
@@ -105,8 +104,9 @@ export default class SearchForm extends React.Component<ISearchFormProps, ISearc
                 <th>REGION</th>
                 <th>TS</th>
                 <th>投稿日</th>
-                <th>いいね数</th>
-                <th>コメント数</th>
+                <th>いいね数<span onClick={(e) => this.search(e, "likeCountSort")}>●</span></th>
+                <th>コメント数<span onClick={(e) => this.search(e, "commentCountSort")}>●</span></th>
+                <th>閲覧数</th>
               </tr>
             </thead>
             <tbody>
@@ -133,6 +133,8 @@ export default class SearchForm extends React.Component<ISearchFormProps, ISearc
                   <td>{list.LikeCount}</td>
                   {/* コメント数 */}
                   <td>{list.CommentCount}</td>
+                  {/* 閲覧数 */}
+                  <td>閲覧数</td>
                 </tr>
               )}
             </tbody>

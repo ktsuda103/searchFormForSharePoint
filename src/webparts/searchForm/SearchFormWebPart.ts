@@ -122,19 +122,27 @@ export default class SearchFormWebPart extends BaseClientSideWebPart<ISearchForm
     const tmp: IPageListItem[] = [];
     //インスタンスを一時退避
     const instance = this;
-    response.forEach(function (list) {
-      list.Title != null
-        && list.Title != "ホーム"
-        && instance._setLikeCount(list)
-        && instance._setCommentCount(list)
-        && tmp.push(list)
+
+    response.forEach(async function (list) {
+      if (list.Title != null && list.Title != "ホーム") {
+        await instance._setLikeCount(list)
+        await instance._setCommentCount(list)
+        await instance.pushArr(tmp, list)
+      }
+      // list.Title != null
+      //   && list.Title != "ホーム"
+      //   && instance._setLikeCount(list)
+      //   && instance._setCommentCount(list)
+      //   && instance.pushArr(tmp, list)
     })
     tmp.sort((a, b) => this._sortDescending(a.Created, b.Created))
     this._pages = tmp;
     this.render();
   }
 
-  private _search = async (state: ISearchFormState): Promise<void> => {
+
+
+  private _search = async (state: ISearchFormState, status?: string): Promise<void> => {
     const response: IPageListItem[] = await this._getListItems();
     //一時保存
     const tmp: IPageListItem[] = [];
@@ -153,11 +161,18 @@ export default class SearchFormWebPart extends BaseClientSideWebPart<ISearchForm
         && instance._setCommentCount(list)
         && tmp.push(list)
     })
+    status == "likeCountSort" && tmp.sort((a, b) => this._sortDescending(a.LikeCount, b.LikeCount));
+    status == "commentCountSort" && tmp.sort((a, b) => this._sortDescending(a.CommentCount, b.CommentCount));
+    status == "clickSearchButton" && tmp.sort((a, b) => this._sortDescending(a.Created, b.Created))
     this._pages = tmp;
     this.render();
   }
-
+  private pushArr(tmp: IPageListItem[], list: IPageListItem) {
+    console.log("push")
+    tmp.push(list)
+  }
   private async _getListItems(): Promise<IPageListItem[]> {
+    console.log("getItems")
     const response = await this.context.spHttpClient.get(
       this.context.pageContext.web.absoluteUrl + `/_api/web/lists/getbytitle('サイトのページ')/items`,
       SPHttpClient.configurations.v1);
@@ -174,6 +189,7 @@ export default class SearchFormWebPart extends BaseClientSideWebPart<ISearchForm
 
   private async _setLikeCount(list: IPageListItem): Promise<void> {
     list.LikeCount = await this._getLikeCount(list.Id)
+    console.log("likeCount")
   }
 
   private async _getLikeCount(id: string): Promise<number> {
@@ -192,7 +208,8 @@ export default class SearchFormWebPart extends BaseClientSideWebPart<ISearchForm
 
   private async _setCommentCount(list: IPageListItem): Promise<void> {
     list.CommentCount = await this._getCommentCount(list.Id)
-    this.render()
+    console.log("commentCount")
+    //this.render()
   }
 
   private async _getCommentCount(id: string): Promise<number> {
@@ -230,6 +247,7 @@ export default class SearchFormWebPart extends BaseClientSideWebPart<ISearchForm
    * @returns 
    */
   private _sortAscending(target1: any, target2: any) {
+    console.log("sort")
     if (target1 == target2) { return 0 }
     if (target1 > target2) { return 1 }
     if (target1 < target2) { return -1 }
